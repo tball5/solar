@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solar system — interactive map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#05070F;--panel:rgba(11,15,26,.86);--line:#1C2335;--txt:#E9EDF6;--mut:#8B94AB;--amber:#F2C272;--blue:#6FA0E8}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--txt);font-family:'Space Grotesk',system-ui,sans-serif;display:flex;flex-direction:column;overflow:hidden}
+header{padding:10px 16px 9px;border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.brand{font-weight:600;letter-spacing:.14em;font-size:13px;text-transform:uppercase;white-space:nowrap}
+.brand small{color:var(--mut);font-weight:400;letter-spacing:.1em;text-transform:uppercase;margin-left:8px;font-size:11px}
+.seg{display:flex}
+.seg.push{margin-left:auto}
+.seg button{border-radius:0}
+.seg button:first-child{border-radius:8px 0 0 8px}
+.seg button:last-child{border-radius:0 8px 8px 0;border-left:none}
+.sub{display:flex;align-items:flex-end;gap:14px}
+.uniWrap{flex:1;display:flex;align-items:center;justify-content:center;gap:10px;align-self:center;margin-top:10px;flex-wrap:wrap}
+#uniBtn{padding:8px 14px}
+.uniHint{font-size:11px;font-style:italic;color:var(--mut);white-space:nowrap}
+#resetBtn{margin-left:auto}
+@media(max-width:760px){.uniHint{display:none}}
+button.icon{width:46px;padding:8px 0;text-align:center;font-size:15px;line-height:1}
+.sliders{display:grid;grid-template-columns:max-content minmax(220px,1fr) max-content;gap:7px 12px;align-items:center;flex:1.4;max-width:720px;margin-top:10px}
+.sliders label{font-size:12px;color:var(--mut)}
+.sliders span{font-size:11px;color:var(--mut);min-width:78px;text-align:right}
+.sliders input{width:100%}
+button{font-family:inherit;font-size:12px;color:var(--txt);background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;transition:border-color .15s,color .15s}
+button:hover{border-color:#33405E}
+button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+button.on{border-color:var(--amber);color:var(--amber)}
+input:disabled{opacity:.35}
+input[type=range]{accent-color:var(--amber)}
+input[type=range]:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.mono{font-family:'IBM Plex Mono',monospace}
+#speedOut{font-size:11px;color:var(--mut);min-width:96px}
+.rail{display:flex;gap:6px;padding:8px 16px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.rail::-webkit-scrollbar{display:none}
+.chip{white-space:nowrap;border-radius:999px;padding:5px 13px;color:var(--mut)}
+.chip.active{border-color:var(--amber);color:var(--amber)}
+main{position:relative;flex:1;min-height:0}
+canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab;display:block}
+.hud{position:absolute;left:14px;bottom:12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--mut);pointer-events:none;line-height:1.7}
+.hud b{color:var(--amber);font-weight:500}
+.hint{position:absolute;left:14px;top:10px;font-size:11.5px;color:rgba(170,180,205,.6);pointer-events:none}
+.zoomctl{position:absolute;right:14px;top:12px;display:flex;flex-direction:column;gap:6px}
+.zoomctl button{background:var(--panel);backdrop-filter:blur(8px);font-size:16px;line-height:1}
+#panel{position:absolute;right:14px;bottom:14px;width:min(350px,calc(100% - 28px));max-height:62%;overflow:auto;background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:14px;padding:16px 18px 18px}
+#panel.hidden{display:none}
+#panel h2{font-size:17px;font-weight:600;display:flex;align-items:baseline;gap:10px}
+#panel h2 small{font-size:12px;font-weight:400;color:var(--mut)}
+#panel p{font-size:13px;color:var(--mut);line-height:1.6;margin-top:6px}
+#panel .x{position:absolute;top:10px;right:10px;border:none;color:var(--mut);font-size:14px;padding:4px 8px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.stat{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+.stat span{display:block;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--mut)}
+.stat b{display:block;font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:13px;margin-top:3px;color:var(--txt)}
+#openPanel{position:absolute;right:14px;bottom:14px;background:var(--panel);backdrop-filter:blur(8px);display:none}
+#openPanel.show{display:block}
+@media(max-width:560px){.hint{display:none}.hud{font-size:10.5px}#panel{max-height:48%}}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand">Solar system<small>Interactive Map</small></div>
+    <button class="icon" id="playBtn" aria-label="Pause animation">⏸</button>
+    <div class="seg push" role="tablist" aria-label="View">
+      <button id="mapTab" class="on">Orbit map</button>
+      <button id="lineupTab">True size view</button>
+    </div>
+    <div class="seg" role="group" aria-label="Distance scale">
+      <button id="compTab" class="on">Compressed</button>
+      <button id="trueDistTab">True distance</button>
+    </div>
+  </div>
+  <div class="sub">
+    <div class="sliders">
+      <label for="speed">Speed</label>
+      <input type="range" id="speed" min="0" max="100" value="0" step="1">
+      <span id="speedOut" class="mono"></span>
+      <label for="tilt">Tilt</label>
+      <input type="range" id="tilt" min="0" max="180" value="0" step="1">
+      <span id="tiltOut" class="mono">0&#176; top</span>
+      <label for="size">Size</label>
+      <input type="range" id="size" min="0" max="100" value="0" step="1">
+      <span id="sizeOut" class="mono">true ratio</span>
+    </div>
+    <div class="uniWrap">
+      <button id="uniBtn">Unified scale</button>
+      <span class="uniHint">&#8592; sizes &amp; distances on one true scale</span>
+    </div>
+    <button id="resetBtn">Reset</button>
+  </div>
+</header>
+<div class="rail" id="chips" role="toolbar" aria-label="Select a body"></div>
+<main>
+  <canvas id="cv"></canvas>
+  <div class="hint">drag to pan · scroll or pinch to zoom · click a planet</div>
+  <div class="hud" id="hud"></div>
+  <div class="zoomctl">
+    <button id="zin" aria-label="Zoom in">+</button>
+    <button id="zout" aria-label="Zoom out">−</button>
+  </div>
+  <aside id="panel" aria-live="polite"></aside>
+  <button id="openPanel">ⓘ facts</button>
+</main>
+<script>
+/* ============================================================
+   SOLAR SYSTEM — INTERACTIVE MAP
+   One continuous world-coordinate system: 64px = 1 AU (true
+   distance mode). Compressed mode places planetary orbits at
+   64*sqrt(AU) instead. Camera = {x,y world px, z zoom}; tilt
+   rotates the view plane (w2s projects [x,y,z] -> screen).
+   Deep-space layers (Kuiper, heliopause, Oort, nearby stars,
+   Milky Way, Local Group) live in the same coordinates and
+   crossfade by zoom depth — see band() and drawDeep().
+   applyScale() is the single choke point for all scale modes.
+   ============================================================ */
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d'),main=document.querySelector('main');
+const panel=document.getElementById('panel'),openPanel=document.getElementById('openPanel'),hud=document.getElementById('hud');
+let W=0,H=0,dpr=1,STARS=[];
+function genStars(){STARS=[];const n=Math.round(W*H/1300);const cols=['#ffffff','#ffffff','#cfe0ff','#ffe9c9'];for(let i=0;i<n;i++){STARS.push({x:Math.random()*W,y:Math.random()*H,r:.3+Math.random()*1.1,a:.12+Math.random()*.7,tw:Math.random()*6,c:cols[Math.floor(Math.random()*4)]});}}
+const rad=d=>d*Math.PI/180;
+const F=(a,b,c,d,e,f)=>[['Distance from sun',a],['Diameter',b],['Year length',c],['Day length',d],['Moons',e],['Temperature',f]];
+const PL=[
+{n:'Mercury',tag:'closest to the sun',col:'#9E938C',a:.387,e:.206,per:.241,d:4879,w:rad(77),ph:.8,desc:'The smallest planet, a cratered ball of rock with the most stretched-out orbit of the eight. With almost no atmosphere, it swings between scorching days and frozen nights.',f:F('57.9M km \u00b7 0.39 AU','4,879 km','88 Earth days','59 Earth days','0','\u2212173 to 427 \u00b0C')},
+{n:'Venus',tag:'2nd planet',col:'#D9B98A',a:.723,e:.007,per:.615,d:12104,w:rad(131),ph:2.1,desc:'The hottest planet, wrapped in crushing carbon dioxide clouds. It spins backwards so slowly that its day is longer than its year.',f:F('108.2M km \u00b7 0.72 AU','12,104 km','225 Earth days','243 Earth days','0','464 \u00b0C')},
+{n:'Earth',tag:'our home',col:'#3F76C4',a:1,e:.017,per:1,d:12756,w:rad(103),ph:3.6,desc:'The only known world with liquid surface oceans and life. Click Earth, then keep zooming in to watch the moon circling it.',f:F('149.6M km \u00b7 1.00 AU','12,756 km','365.25 days','24 hours','1','15 \u00b0C average')},
+{n:'Mars',tag:'the red planet',col:'#B5613C',a:1.524,e:.093,per:1.881,d:6792,w:rad(336),ph:5.2,desc:'A cold desert world rusted red by iron oxide, with the tallest volcano in the solar system and two tiny captured moons.',f:F('227.9M km \u00b7 1.52 AU','6,792 km','687 Earth days','24.6 hours','2','\u221265 \u00b0C average')},
+{n:'Ceres',tag:'dwarf planet \u00b7 asteroid belt',col:'#8E8A82',a:2.77,e:.076,per:4.6,d:940,w:rad(153),ph:4.1,desc:'The largest object in the asteroid belt, holding about a third of its total mass \u2014 and the first asteroid ever discovered, in 1801. It hides water ice and bright salt deposits in its craters.',f:F('414M km \u00b7 2.77 AU','940 km','4.6 Earth years','9 hours','0','\u2212105 \u00b0C')},
+{n:'Jupiter',tag:'largest planet',col:'#C9A07A',a:5.203,e:.049,per:11.86,d:142984,w:rad(14),ph:1.3,desc:'A gas giant more massive than all the other planets combined, 11 Earths wide, with a storm (the Great Red Spot) bigger than our whole planet. Zoom in to find Io, Europa, Ganymede and Callisto.',f:F('778.5M km \u00b7 5.20 AU','142,984 km','11.9 Earth years','9.9 hours','95','\u2212110 \u00b0C')},
+{n:'Saturn',tag:'the ringed giant',col:'#D8C08C',a:9.58,e:.057,per:29.4,d:120536,w:rad(93),ph:4.4,desc:'Famous for rings of ice and rock spanning 280,000 km yet only about 10 meters thick. The planet itself is less dense than water. Zoom in to spot Titan, its giant moon.',f:F('1.43B km \u00b7 9.58 AU','120,536 km','29.4 Earth years','10.7 hours','146','\u2212140 \u00b0C')},
+{n:'Uranus',tag:'ice giant',col:'#8FC4CC',a:19.19,e:.046,per:84,d:51118,w:rad(173),ph:2.8,desc:'An ice giant knocked onto its side. It rolls around the sun tilted 98\u00b0, so each pole gets 42 years of daylight followed by 42 years of night.',f:F('2.87B km \u00b7 19.2 AU','51,118 km','84 Earth years','17.2 hours','28','\u2212195 \u00b0C')},
+{n:'Neptune',tag:'farthest planet',col:'#4666C9',a:30.07,e:.010,per:164.8,d:49528,w:rad(48),ph:.3,desc:'The windiest world we know, with supersonic gusts over 2,000 km/h. It was found by math before it was ever seen through a telescope.',f:F('4.50B km \u00b7 30.1 AU','49,528 km','165 Earth years','16.1 hours','16','\u2212200 \u00b0C')},
+{n:'Pluto',tag:'dwarf planet',col:'#B0A192',a:39.48,e:.249,per:248,d:2376,w:rad(224),ph:5.8,desc:'Reclassified as a dwarf planet in 2006. Its orbit is so eccentric that it sometimes swings inside Neptune\u2019s path. Smaller than our own moon, with a heart-shaped nitrogen glacier.',f:F('5.91B km \u00b7 39.5 AU','2,376 km','248 Earth years','6.4 Earth days','5','\u2212225 \u00b0C')},
+{n:'Eris',tag:'dwarf planet \u00b7 scattered disc',col:'#C4BFB6',a:67.8,e:.44,per:559,d:2326,w:rad(187),ph:1.9,desc:'Slightly smaller than Pluto but more massive \u2014 its discovery in 2005 is what forced astronomers to define \u201cplanet\u201d and demote Pluto. Its orbit is tilted a wild 44\u00b0 and takes 559 years to complete, with one known moon, Dysnomia.',f:F('10.1B km \u00b7 67.8 AU avg','2,326 km','559 Earth years','25.9 hours','1 (Dysnomia)','\u2212231 \u00b0C')}];
+const INC=[7,3.39,0,1.85,10.6,1.31,2.49,.77,1.77,17.2,44];
+const AUPX=km=>64*km/149.6e6;
+function applyScale(){PL.forEach((p,ix)=>{const base=distMode==='true'?64*p.a:64*Math.sqrt(p.a);p.apx=base;p.bpx=base*Math.sqrt(1-p.e*p.e);p.cpx=base*p.e;p.inc=rad(INC[ix]);if(unified){p.vr=AUPX(p.d/2);}else{const vis=6*Math.pow(p.d/12756,.45)*.55*(p.a<3?.55:1),tru=16*p.d/1392700;p.vr=Math.exp((1-sizeS)*Math.log(vis)+sizeS*Math.log(tru));}});SUN.vr=unified?AUPX(696350):16;const hb=distMode==='true'?64*HALLEY.a:64*Math.sqrt(HALLEY.a);HALLEY.apx=hb;HALLEY.bpx=hb*Math.sqrt(1-HALLEY.e*HALLEY.e);HALLEY.cpx=hb*HALLEY.e;HALLEY.vr=unified?AUPX(7.5):Math.exp((1-sizeS)*Math.log(.9)+sizeS*Math.log(.02));MOONS.forEach(m=>{if(unified){m.a=AUPX(m.ak);m.r=AUPX(m.dk/2);}else{const aT=16*m.ak/696350,rT=16*m.dk/1392700;m.a=Math.exp((1-sizeS)*Math.log(m.av)+sizeS*Math.log(aT));m.r=Math.exp((1-sizeS)*Math.log(m.rv)+sizeS*Math.log(rT));}});BELT.forEach(b=>{b.r=distMode==='true'?64*b.au:64*Math.sqrt(b.au);});}
+const SUN={n:'Sun',tag:'our star',col:'#FFCF7A',vr:16,d:1392700,desc:'A middle-aged yellow dwarf star holding 99.86% of all the mass in the solar system. Every second it fuses 600 million tons of hydrogen into helium.',f:[['Diameter','1,392,700 km'],['Share of system mass','99.86%'],['Surface temp','5,505 \u00b0C'],['Core temp','15 million \u00b0C'],['Age','4.6 billion years'],['Light to Earth','8 min 20 s']]};
+const BELT=[];for(let i=0;i<650;i++){const au=2.1+Math.random()*1.2;BELT.push({au:au,th:Math.random()*6.283,per:Math.pow(au,1.5),s:Math.random()*1.1+.5,al:.12+Math.random()*.33});}
+const HALLEY={n:'Halley',tag:'periodic comet',kepler:true,a:17.83,e:.967,per:75.3,w:rad(112),inc:rad(162.3),ph:2.5,desc:'The most famous comet \u2014 a dirty snowball on a stretched, retrograde orbit tilted 162\u00b0 against the planets. It dives from beyond Neptune to inside Venus\u2019s orbit, growing a tail as the sun boils its ice. Watch it sprint through perihelion and crawl near aphelion.',f:[['Perihelion','0.59 AU \u00b7 88M km'],['Aphelion','35.1 AU \u00b7 5.25B km'],['Orbital period','75\u201376 years'],['Nucleus','15 \u00d7 8 km'],['Last perihelion','Feb 1986'],['Next perihelion','Jul 2061']]};
+const MOONS=[
+{host:'Earth',n:'Moon',av:8,rv:.5,ak:384400,dk:3475,per:.0748,ph:0,col:'#A9A9A2'},
+{host:'Jupiter',n:'Io',av:14,rv:.55,ak:421700,dk:3643,per:.00485,ph:1.2,col:'#D8C77E'},
+{host:'Jupiter',n:'Europa',av:18,rv:.5,ak:670900,dk:3122,per:.00972,ph:3.4,col:'#C8B89A'},
+{host:'Jupiter',n:'Ganymede',av:23,rv:.8,ak:1070400,dk:5268,per:.0196,ph:5.1,col:'#9C8F7F'},
+{host:'Jupiter',n:'Callisto',av:30,rv:.75,ak:1882700,dk:4821,per:.0457,ph:.7,col:'#7A7268'},
+{host:'Saturn',n:'Titan',av:16,rv:.8,ak:1221900,dk:5150,per:.0437,ph:2.2,col:'#C9A86A'}];
+PL.forEach(p=>{const ms=MOONS.filter(m=>m.host===p.n);p.moons=ms.length?ms:null;});
+const ALLB=PL.concat([HALLEY]);
+let distMode='compressed',sizeS=1,unified=false;applyScale();
+
+/* ---- deep space layers (zoom out) ---- */
+const PXLY=64*63241;
+const L10=z=>Math.log(z)/Math.LN10;
+function band(z,a,b,c,d){const l=L10(z);if(l<=a||l>=d)return 0;if(l<b)return(l-a)/(b-a);if(l>c)return(d-l)/(d-c);return 1;}
+const KUIPER=[];for(let i=0;i<260;i++)KUIPER.push({au:30+Math.random()*20,th:Math.random()*6.283,s:Math.random()<.5?1:1.5,al:.1+Math.random()*.25});
+const OORT=[];for(let i=0;i<420;i++)OORT.push({r:(2000+Math.pow(Math.random(),1.7)*98000)*64,th:Math.random()*6.283,al:.08+Math.random()*.2});
+const NEAR=[['Alpha Centauri',4.37,33,'#FFE9B5'],['Proxima Centauri',4.25,48,'#FFB07A'],['Barnard\u2019s Star',5.96,80,'#FF9E6B'],['Wolf 359',7.86,130,'#FF8E5E'],['Lalande 21185',8.31,165,'#FFC894'],['Sirius',8.60,235,'#CFE2FF'],['Luyten 726-8',8.73,280,'#FF9E6B'],['Ross 154',9.71,318,'#FFA478'],['Epsilon Eridani',10.45,255,'#FFD9A0'],['Tau Ceti',11.90,205,'#FFE9B5']].map(s=>({n:s[0],d:s[1],x:Math.cos(rad(s[2]))*s[1]*PXLY,y:Math.sin(rad(s[2]))*s[1]*PXLY,col:s[3]}));
+const GC={x:Math.cos(rad(200))*26000*PXLY,y:Math.sin(rad(200))*26000*PXLY},GALR=50000*PXLY;
+const GSTARS=[];(function(){const cols=['#ffffff','#cfe0ff','#ffe9c9','#ffd9a0'];
+for(let i=0;i<1500;i++){let rly,a;const u=Math.random();
+if(u<.2){rly=Math.pow(Math.random(),2)*8000;a=Math.random()*6.283;}
+else if(u<.85){const arm=Math.random()<.5?0:Math.PI,th=Math.random()*9.7;rly=Math.min(49000,2600*Math.exp(.3*th)*(0.88+Math.random()*.24));a=arm+th+(Math.random()-.5)*.5;}
+else{rly=Math.sqrt(Math.random())*47000;a=Math.random()*6.283;}
+GSTARS.push({x:GC.x+Math.cos(a)*rly*PXLY,y:GC.y+Math.sin(a)*rly*PXLY,s:Math.random()<.75?1.2:1.9,al:.18+Math.random()*.42,c:cols[Math.floor(Math.random()*4)]});}})();
+const LG=[{n:'Large Magellanic Cloud',sub:'160,000 ly',D:160000,ang:150,r:7000,ry:.75,tl:.4},
+{n:'Small Magellanic Cloud',sub:'200,000 ly',D:200000,ang:140,r:3800,ry:.8,tl:-.3},
+{n:'Triangulum \u00b7 M33',sub:'2.7 million ly',D:2.73e6,ang:-8,r:30000,ry:.7,tl:-.45},
+{n:'Andromeda \u00b7 M31',sub:'2.5 million ly \u00b7 inbound, merges with us in ~4.5B yr',D:2.5e6,ang:-32,r:110000,ry:.32,tl:.55}];
+LG.forEach(g=>{g.x=Math.cos(rad(g.ang))*g.D*PXLY;g.y=Math.sin(rad(g.ang))*g.D*PXLY;g.rp=g.r*PXLY;});
+const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let cam={x:0,y:0,z:.6},tgt={x:0,y:0,z:.6},sel=null,follow=false,playing=!reduced,t=.4,mode='map',spd=.24,interacted=false;
+const maxExt=()=>distMode==='true'?6400:780;
+const MAXZ=()=>unified?50000:320;
+const fitZ=()=>Math.max(.03,Math.min(W,H)*.95/(2*maxExt()));
+function resize(){dpr=window.devicePixelRatio||1;W=main.clientWidth;H=main.clientHeight;cv.width=W*dpr;cv.height=H*dpr;genStars();if(!interacted&&!sel){cam.z=tgt.z=fitZ();}if(mode==='true')fitTrue();}
+new ResizeObserver(resize).observe(main);resize();
+cam.z=tgt.z=fitZ();
+let tiltDeg=0,cosT=1,sinT=0;
+const ctSafe=()=>{const s=cosT<0?-1:1;return s*Math.max(Math.abs(cosT),.08);};
+const minR=()=>unified?.5:1.6-1.1*sizeS;
+function keplerPos(b,tt){let M=(b.ph+6.2832*tt/b.per)%6.2832;if(M<0)M+=6.2832;let E=M;for(let k=0;k<7;k++)E-=(E-b.e*Math.sin(E)-M)/(1-b.e*Math.cos(E));const ex=b.apx*Math.cos(E)-b.cpx,ey=b.bpx*Math.sin(E),ey2=ey*Math.cos(b.inc),ez=ey*Math.sin(b.inc),cw=Math.cos(b.w),sw=Math.sin(b.w);return{x:ex*cw-ey2*sw,y:ex*sw+ey2*cw,z:ez};}
+const bodyPos=(b,tt)=>b.kepler?keplerPos(b,tt):pos(b,tt);
+function pos(p,tt){const th=p.ph+6.2832*tt/p.per,ex=p.apx*Math.cos(th)-p.cpx,ey=p.bpx*Math.sin(th),ey2=ey*Math.cos(p.inc),ez=ey*Math.sin(p.inc),cw=Math.cos(p.w),sw=Math.sin(p.w);return{x:ex*cw-ey2*sw,y:ex*sw+ey2*cw,z:ez};}
+function orbitPt(p,th){const ex=p.apx*Math.cos(th)-p.cpx,ey=p.bpx*Math.sin(th),ey2=ey*Math.cos(p.inc),ez=ey*Math.sin(p.inc),cw=Math.cos(p.w),sw=Math.sin(p.w);return{x:ex*cw-ey2*sw,y:ex*sw+ey2*cw,z:ez};}
+const w2s=(x,y,z)=>({x:(x-cam.x)*cam.z+W/2,y:(((y-cam.y)*cosT)-(z||0)*sinT)*cam.z+H/2});
+function drawStars(now){for(const s of STARS){ctx.globalAlpha=s.a*(.82+.18*Math.sin(now/900+s.tw));ctx.fillStyle=s.c;ctx.fillRect(s.x,s.y,s.r,s.r);}ctx.globalAlpha=1;}
+function drawSun(s,r){const g=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,r*1.175);g.addColorStop(0,'#FFF6DC');g.addColorStop(.62,'#FFD98F');g.addColorStop(.83,'rgba(255,180,90,.4)');g.addColorStop(.93,'rgba(255,150,60,.08)');g.addColorStop(1,'rgba(255,140,50,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(s.x,s.y,r*1.175,0,6.283);ctx.fill();}
+function shade(s,r,ang){const g=ctx.createLinearGradient(s.x-Math.cos(ang)*r,s.y-Math.sin(ang)*r,s.x+Math.cos(ang)*r,s.y+Math.sin(ang)*r);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.45,'rgba(3,5,14,.06)');g.addColorStop(1,'rgba(3,5,14,.8)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(s.x,s.y,r,0,6.283);ctx.fill();}
+function rings(s,r,a0,a1){const m=r*1.78,ry=.42;ctx.lineWidth=Math.max(r*.34,1);ctx.strokeStyle='rgba(198,182,140,.55)';ctx.beginPath();ctx.ellipse(s.x,s.y,m,m*ry,0,a0,a1);ctx.stroke();ctx.lineWidth=Math.max(r*.1,.6);ctx.strokeStyle='rgba(160,145,108,.35)';ctx.beginPath();ctx.ellipse(s.x,s.y,r*2.18,r*2.18*ry,0,a0,a1);ctx.stroke();}
+function surface(p,s,r){ctx.save();ctx.beginPath();ctx.arc(s.x,s.y,r,0,6.283);ctx.clip();
+if(p.n==='Jupiter'){const b=[[-.55,.13,'rgba(125,88,58,.38)'],[-.22,.1,'rgba(245,230,205,.3)'],[.05,.12,'rgba(125,88,58,.32)'],[.38,.1,'rgba(125,88,58,.28)']];for(const bb of b){ctx.fillStyle=bb[2];ctx.fillRect(s.x-r,s.y+bb[0]*r,2*r,bb[1]*2*r);}ctx.fillStyle='rgba(165,82,52,.6)';ctx.beginPath();ctx.ellipse(s.x+r*.3,s.y+r*.32,r*.17,r*.1,0,0,6.283);ctx.fill();}
+if(p.n==='Saturn'){ctx.fillStyle='rgba(150,125,85,.25)';for(const o of[-.4,-.05,.32])ctx.fillRect(s.x-r,s.y+o*r,2*r,.2*r);}
+if(p.n==='Earth'){ctx.fillStyle='rgba(98,132,76,.9)';ctx.beginPath();ctx.ellipse(s.x-r*.32,s.y-r*.18,r*.42,r*.28,-.5,0,6.283);ctx.fill();ctx.beginPath();ctx.ellipse(s.x+r*.38,s.y+r*.3,r*.3,r*.2,.6,0,6.283);ctx.fill();ctx.beginPath();ctx.ellipse(s.x+r*.1,s.y-r*.5,r*.22,r*.13,.2,0,6.283);ctx.fill();ctx.fillStyle='rgba(238,243,248,.8)';ctx.beginPath();ctx.ellipse(s.x,s.y-r*.93,r*.5,r*.14,0,0,6.283);ctx.fill();ctx.beginPath();ctx.ellipse(s.x,s.y+r*.95,r*.45,r*.12,0,0,6.283);ctx.fill();}
+if(p.n==='Mars'){ctx.fillStyle='rgba(80,42,26,.3)';ctx.beginPath();ctx.ellipse(s.x-r*.2,s.y+r*.15,r*.4,r*.2,.4,0,6.283);ctx.fill();ctx.fillStyle='rgba(240,243,246,.8)';ctx.beginPath();ctx.ellipse(s.x+r*.05,s.y-r*.92,r*.3,r*.1,0,0,6.283);ctx.fill();}
+if(p.n==='Mercury'){ctx.fillStyle='rgba(60,55,52,.3)';for(let i=0;i<5;i++){ctx.beginPath();ctx.arc(s.x+Math.cos(i*2.4)*r*.5,s.y+Math.sin(i*1.7)*r*.5,r*.1,0,6.283);ctx.fill();}}
+if(p.n==='Venus'){ctx.fillStyle='rgba(245,235,215,.3)';ctx.beginPath();ctx.ellipse(s.x-r*.1,s.y-r*.25,r*.7,r*.16,.3,0,6.283);ctx.fill();ctx.beginPath();ctx.ellipse(s.x+r*.15,s.y+r*.3,r*.6,r*.13,-.25,0,6.283);ctx.fill();}
+ctx.restore();
+if(p.n==='Earth'){ctx.strokeStyle='rgba(150,195,255,.4)';ctx.lineWidth=Math.max(r*.045,1);ctx.beginPath();ctx.arc(s.x,s.y,r*.99,0,6.283);ctx.stroke();}}
+function drawDeep(){const z=cam.z,ct=Math.max(Math.abs(cosT),.05);
+const ga=band(z,-10.9,-9.9,-7.2,-6.0);
+if(ga>0){const c=w2s(GC.x,GC.y,0),R=GALR*z;
+if(c.x>-R-W&&c.x<W+R+W){ctx.save();ctx.translate(c.x,c.y);ctx.scale(1,ct);
+let g=ctx.createRadialGradient(0,0,0,0,0,R);g.addColorStop(0,'rgba(255,236,205,'+(.32*ga)+')');g.addColorStop(.14,'rgba(228,228,250,'+(.15*ga)+')');g.addColorStop(.65,'rgba(192,200,242,'+(.05*ga)+')');g.addColorStop(1,'rgba(192,200,242,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,R,0,6.283);ctx.fill();ctx.restore();
+for(const st of GSTARS){const s=w2s(st.x,st.y,0);if(s.x<-3||s.x>W+3||s.y<-3||s.y>H+3)continue;ctx.globalAlpha=st.al*ga;ctx.fillStyle=st.c;ctx.fillRect(s.x,s.y,st.s,st.s);}ctx.globalAlpha=1;
+if(R>30&&R<H*3){ctx.textAlign='center';ctx.fillStyle='rgba(206,214,232,'+(.8*ga)+')';ctx.font='11px "Space Grotesk",sans-serif';ctx.fillText('Milky Way',c.x,c.y-R*ct-10);}
+const o=w2s(0,0,0);if(o.x>-40&&o.x<W+40&&o.y>-40&&o.y<H+40){ctx.strokeStyle='rgba(242,194,114,'+(.85*ga)+')';ctx.lineWidth=1;ctx.beginPath();ctx.arc(o.x,o.y,6,0,6.283);ctx.stroke();ctx.textAlign='center';ctx.fillStyle='rgba(242,194,114,'+(.85*ga)+')';ctx.font='11px "Space Grotesk",sans-serif';ctx.fillText('You are here \u00b7 Sun',o.x,o.y-13);}}}
+for(const g of LG){const s=w2s(g.x,g.y,0),R=g.rp*z;if(R<1.4||s.x<-R-220||s.x>W+R+220||s.y<-R-220||s.y>H+R+220)continue;const al=Math.min(1,(R-1.2)/8);
+ctx.save();ctx.translate(s.x,s.y);ctx.rotate(g.tl);ctx.scale(1,g.ry);
+const gg=ctx.createRadialGradient(0,0,0,0,0,R);gg.addColorStop(0,'rgba(255,240,216,'+(.5*al)+')');gg.addColorStop(.25,'rgba(222,226,250,'+(.2*al)+')');gg.addColorStop(1,'rgba(202,208,246,0)');ctx.fillStyle=gg;ctx.beginPath();ctx.arc(0,0,R,0,6.283);ctx.fill();ctx.restore();
+if(R>6){ctx.textAlign='center';ctx.fillStyle='rgba(206,214,232,'+(.9*al)+')';ctx.font='11px "Space Grotesk",sans-serif';ctx.fillText(g.n,s.x,s.y+R*g.ry+16);ctx.fillStyle='rgba(170,180,205,'+(.7*al)+')';ctx.font='10.5px "IBM Plex Mono",monospace';ctx.fillText(g.sub,s.x,s.y+R*g.ry+30);}}
+const na=band(z,-6.3,-5.6,-4.3,-3.6);
+if(na>0){ctx.textAlign='center';ctx.font='10.5px "IBM Plex Mono",monospace';
+for(const st of NEAR){const s=w2s(st.x,st.y,0);if(s.x<-80||s.x>W+80||s.y<-30||s.y>H+30)continue;ctx.globalAlpha=na;ctx.fillStyle=st.col;ctx.beginPath();ctx.arc(s.x,s.y,1.8,0,6.283);ctx.fill();ctx.globalAlpha=1;ctx.fillStyle='rgba(206,214,232,'+(.85*na)+')';ctx.fillText(st.n+' \u00b7 '+st.d+' ly',s.x,s.y-9);}
+const o=w2s(0,0,0);ctx.fillStyle='rgba(242,194,114,'+(.9*na)+')';ctx.beginPath();ctx.arc(o.x,o.y,1.8,0,6.283);ctx.fill();ctx.fillText('Sun',o.x,o.y-9);}
+const oa=band(z,-6.1,-5.4,-3.9,-3.1);
+if(oa>0){ctx.fillStyle='#9FB0CC';for(const d of OORT){const s=w2s(d.r*Math.cos(d.th),d.r*Math.sin(d.th),0);if(s.x<-2||s.x>W+2||s.y<-2||s.y>H+2)continue;ctx.globalAlpha=d.al*oa;ctx.fillRect(s.x,s.y,1.2,1.2);}ctx.globalAlpha=1;
+const lb=w2s(Math.cos(-.8)*64*6e4,Math.sin(-.8)*64*6e4,0);if(lb.x>0&&lb.x<W&&lb.y>0&&lb.y<H){ctx.textAlign='center';ctx.fillStyle='rgba(159,176,204,'+(.6*oa)+')';ctx.font='10.5px "IBM Plex Mono",monospace';ctx.fillText('Oort cloud',lb.x,lb.y);}}
+const ha=band(z,-3.1,-2.5,-1.5,-1.0);
+if(ha>0){const r=(distMode==='true'?64*120:64*Math.sqrt(120))*z,o=w2s(0,0,0);ctx.setLineDash([6,6]);ctx.strokeStyle='rgba(150,190,230,'+(.3*ha)+')';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(o.x,o.y,r,r*ct,0,0,6.283);ctx.stroke();ctx.setLineDash([]);ctx.textAlign='center';ctx.fillStyle='rgba(170,200,230,'+(.55*ha)+')';ctx.font='10.5px "IBM Plex Mono",monospace';ctx.fillText('heliopause \u00b7 ~120 AU',o.x,o.y-r*ct-8);}
+const ka=band(z,-2.9,-2.3,-1.0,-.5);
+if(ka>0){ctx.fillStyle='#8E9AB5';for(const k of KUIPER){const rr=distMode==='true'?64*k.au:64*Math.sqrt(k.au);const s=w2s(rr*Math.cos(k.th),rr*Math.sin(k.th),0);if(s.x<-2||s.x>W+2||s.y<-2||s.y>H+2)continue;ctx.globalAlpha=k.al*ka;ctx.fillRect(s.x,s.y,k.s,k.s);}ctx.globalAlpha=1;
+const kl=w2s(Math.cos(2.4)*(distMode==='true'?64*42:64*Math.sqrt(42)),Math.sin(2.4)*(distMode==='true'?64*42:64*Math.sqrt(42)),0);if(kl.x>0&&kl.x<W&&kl.y>0&&kl.y<H){ctx.textAlign='center';ctx.fillStyle='rgba(142,154,181,'+(.55*ka)+')';ctx.font='10.5px "IBM Plex Mono",monospace';ctx.fillText('Kuiper belt',kl.x,kl.y);}}}
+function drawComet(wp){if(cam.z<5e-4)return;const s=w2s(wp.x,wp.y,wp.z),so=w2s(0,0,0),rpx=Math.hypot(wp.x,wp.y,wp.z)/64,rau=distMode==='true'?rpx:rpx*rpx,r=Math.max(HALLEY.vr*cam.z,1.3);
+if(rau<6.5){let dx=s.x-so.x,dy=s.y-so.y;const dl=Math.hypot(dx,dy)||1;dx/=dl;dy/=dl;const L=Math.min(85,110/Math.max(rau,.45)),al=Math.min(.75,1.3/Math.max(rau,.5)),g=ctx.createLinearGradient(s.x,s.y,s.x+dx*L,s.y+dy*L);g.addColorStop(0,'rgba(175,215,255,'+al+')');g.addColorStop(1,'rgba(175,215,255,0)');ctx.strokeStyle=g;ctx.lineWidth=Math.max(r*1.1,2);ctx.lineCap='round';ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x+dx*L,s.y+dy*L);ctx.stroke();ctx.lineCap='butt';}
+ctx.fillStyle='#DCEAF8';ctx.beginPath();ctx.arc(s.x,s.y,r,0,6.283);ctx.fill();
+if(sel===HALLEY){ctx.strokeStyle='rgba(242,194,114,.55)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(s.x,s.y,r+5,0,6.283);ctx.stroke();}
+if(HALLEY.apx*cam.z>18||sel===HALLEY){ctx.fillStyle='rgba(206,214,232,.85)';ctx.font='11px "Space Grotesk",sans-serif';ctx.fillText('Halley',s.x,s.y-r-8);}}
+function drawMap(now){ctx.fillStyle='#05070F';ctx.fillRect(0,0,W,H);drawStars(now);drawDeep();
+if(maxExt()*cam.z>1.5)for(const p of ALLB){ctx.strokeStyle=sel===p?'rgba(165,190,240,.42)':(p.kepler?'rgba(170,205,230,.18)':'rgba(150,170,215,.16)');ctx.lineWidth=1;ctx.beginPath();for(let k=0;k<=96;k++){const o=orbitPt(p,k/96*6.2832),s=w2s(o.x,o.y,o.z);if(k)ctx.lineTo(s.x,s.y);else ctx.moveTo(s.x,s.y);}ctx.stroke();}
+ctx.fillStyle='#9aa0b4';if(cam.z>2e-3)for(const b of BELT){const a=b.th+6.283*t/b.per,s=w2s(b.r*Math.cos(a),b.r*Math.sin(a),0);if(s.x<-4||s.x>W+4||s.y<-4||s.y>H+4)continue;ctx.globalAlpha=b.al;const sz=Math.max(b.s*Math.min(cam.z,2),.6);ctx.fillRect(s.x,s.y,sz,sz);}ctx.globalAlpha=1;
+const ss=w2s(0,0,0),sr=Math.max(SUN.vr*cam.z,cam.z<1e-4?1.7:5);
+ctx.textAlign='center';
+const list=[{zd:0,sun:true}];
+for(const p of PL){const wp=pos(p,t);list.push({zd:wp.y*sinT+wp.z*cosT,p:p,wp:wp});}
+const hw=keplerPos(HALLEY,t);list.push({zd:hw.y*sinT+hw.z*cosT,c:true,wp:hw});
+list.sort((a,b)=>a.zd-b.zd);
+for(const it of list){
+if(it.sun){drawSun(ss,sr);continue;}
+if(it.c){drawComet(it.wp);continue;}
+const p=it.p,wp=it.wp;if(cam.z<5e-4&&p.vr*cam.z<.25)continue;const s=w2s(wp.x,wp.y,wp.z),r=Math.max(p.vr*cam.z,minR());if(s.x<-r-300||s.x>W+r+300||s.y<-r-300||s.y>H+r+300)continue;
+const ang=Math.atan2(s.y-ss.y,s.x-ss.x);
+if(p.n==='Saturn'&&r>3)rings(s,r,Math.PI,6.283);
+ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(s.x,s.y,r,0,6.283);ctx.fill();
+if(r>15)surface(p,s,r);
+if(r>2.5)shade(s,r,ang);
+if(p.n==='Saturn'&&r>3)rings(s,r,0,Math.PI);
+if(p.moons){for(const m of p.moons){const mrr=m.r*cam.z;if(mrr<=.55)continue;const ma=m.ph+6.283*t/m.per,ms=w2s(wp.x+m.a*Math.cos(ma),wp.y+m.a*Math.sin(ma),wp.z);if(cam.z>6){ctx.strokeStyle='rgba(150,170,215,.13)';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(s.x,s.y,m.a*cam.z,m.a*cam.z*Math.max(Math.abs(cosT),.04),0,0,6.283);ctx.stroke();}ctx.fillStyle=m.col;ctx.beginPath();ctx.arc(ms.x,ms.y,Math.max(mrr,1),0,6.283);ctx.fill();if(mrr>1.8)shade(ms,mrr,ang);if(cam.z>11){ctx.fillStyle='rgba(200,208,226,.7)';ctx.font='11px "Space Grotesk",sans-serif';ctx.fillText(m.n,ms.x,ms.y-mrr-6);}}}
+if(sel===p){ctx.strokeStyle='rgba(242,194,114,.55)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(s.x,s.y,r+5,0,6.283);ctx.stroke();}
+if(p.apx*cam.z>18||sel===p){ctx.fillStyle='rgba(206,214,232,.85)';ctx.font='11px "Space Grotesk",sans-serif';ctx.fillText(p.n,s.x,s.y-r-8);}}
+ctx.fillStyle='rgba(206,214,232,.85)';ctx.font='11px "Space Grotesk",sans-serif';if(cam.z<2.5&&cam.z>2e-3)ctx.fillText('Sun',ss.x,ss.y-sr*1.1-8);}
+let trueHits=[],tc={x:0,y:0,z:1};const K=110/142984;
+function layoutTrue(){const items=[];let x=150;for(const p of PL){const pr=Math.max(p.d/2*K,1.2),slot=Math.max(pr,4);x+=slot;items.push({p:p,x:x,pr:pr});x+=slot+36;}return{items:items,width:x,sunCx:-SUN.d/2*K+96,sunR:SUN.d/2*K};}
+const TL=layoutTrue();
+function fitTrue(){tc.z=Math.min(1.6,(W-24)/TL.width);tc.x=TL.width/2;tc.y=0;}
+function setZoomT(nz,mx,my){nz=Math.min(40,Math.max(.15,nz));const wx=(mx-W/2)/tc.z+tc.x,wy=(my-H/2)/tc.z+tc.y;tc.x=wx-(mx-W/2)/nz;tc.y=wy-(my-H/2)/nz;tc.z=nz;}
+function drawTrue(now){ctx.fillStyle='#05070F';ctx.fillRect(0,0,W,H);drawStars(now);
+const z=tc.z,y0=(0-tc.y)*z+H/2;
+const scx=(TL.sunCx-tc.x)*z+W/2,sR=TL.sunR*z;
+if(scx+sR*1.06>0&&scx-sR*1.06<W){const g=ctx.createRadialGradient(scx,y0,sR*.85,scx,y0,sR*1.06);g.addColorStop(0,'#FFCF7A');g.addColorStop(.85,'#FFC468');g.addColorStop(1,'rgba(255,170,80,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(scx,y0,sR*1.06,0,6.283);ctx.fill();}
+ctx.textAlign='left';ctx.fillStyle='rgba(206,214,232,.85)';ctx.font='12px "IBM Plex Mono",monospace';ctx.fillText('Sun \u00b7 1,392,700 km',12,28);
+ctx.textAlign='center';let i=0;trueHits=[];
+for(const it of TL.items){const p=it.p,r=Math.max(it.pr*z,1),s={x:(it.x-tc.x)*z+W/2,y:y0};i++;
+if(s.x<-r-90||s.x>W+r+90)continue;
+if(p.n==='Saturn'&&r>2)rings(s,r,Math.PI,6.283);
+ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(s.x,s.y,r,0,6.283);ctx.fill();
+if(r>15)surface(p,s,r);if(r>2.5)shade(s,r,0);
+if(p.n==='Saturn'&&r>2)rings(s,r,0,Math.PI);
+const ly=y0+Math.max(r,6)+(i%2?18:46);
+ctx.fillStyle=sel===p?'#F2C272':'rgba(206,214,232,.85)';ctx.font='11px "Space Grotesk",sans-serif';ctx.fillText(p.n,s.x,ly);
+ctx.fillStyle='rgba(170,180,205,.6)';ctx.font='10.5px "IBM Plex Mono",monospace';ctx.fillText(p.d.toLocaleString()+' km',s.x,ly+14);
+trueHits.push({x:s.x,y:y0,r:Math.max(r,12),p:p});}
+ctx.fillStyle='rgba(170,180,205,.55)';ctx.font='11px "Space Grotesk",sans-serif';ctx.fillText('Sizes at true ratio \u00b7 drag and zoom to explore \u00b7 distances not to scale',W/2,H-14);}
+let last=performance.now(),hudTick=0;
+function frame(now){const dt=Math.min((now-last)/1000,.1);last=now;
+if(playing&&mode==='map')t+=dt*spd;
+if(follow&&sel&&mode==='map'){if(sel===SUN){tgt.x=0;tgt.y=0;}else{const p=bodyPos(sel,t);tgt.x=p.x;tgt.y=p.y;}}
+cam.x+=(tgt.x-cam.x)*.12;cam.y+=(tgt.y-cam.y)*.12;cam.z*=Math.pow(tgt.z/cam.z,.12);
+ctx.setTransform(dpr,0,0,dpr,0,0);
+if(mode==='map')drawMap(now);else drawTrue(now);
+if(++hudTick%6===0)updHud();
+requestAnimationFrame(frame);}
+function updHud(){if(mode==='true'){hud.innerHTML='true size comparison';return;}
+const auw=W/cam.z/64;let fv;if(auw<2e4)fv=Math.round(auw).toLocaleString()+' AU';else{const ly=auw/63241;fv=ly<2e4?Math.round(ly).toLocaleString()+' ly':(ly/1e6).toFixed(2)+' million ly';}
+let s='T+'+t.toFixed(1)+' yr \u00b7 '+(distMode==='true'?'true distance':'compressed \u221aAU')+(unified?' \u00b7 unified':'')+(tiltDeg?' \u00b7 tilt '+tiltDeg+'\u00b0 ('+tiltWord()+')':'')+' \u00b7 view \u2248 '+fv;
+if(sel&&sel!==SUN){const p=bodyPos(sel,t),rr=Math.hypot(p.x,p.y,p.z)/64,au=distMode==='true'?rr:rr*rr;s+='<br><b>'+sel.n+'</b> \u00b7 '+au.toFixed(2)+' AU from sun';}
+hud.innerHTML=s;}
+function statGrid(a){return '<div class="stats">'+a.map(kv=>'<div class="stat"><span>'+kv[0]+'</span><b>'+kv[1]+'</b></div>').join('')+'</div>';}
+function showFacts(p){panel.classList.remove('hidden');openPanel.classList.remove('show');panel.innerHTML='<button class="x" aria-label="Close panel">\u2715</button><h2>'+p.n+'<small>'+p.tag+'</small></h2><p>'+p.desc+'</p>'+statGrid(p.f);wireClose();markChips();}
+function showOverview(){panel.classList.remove('hidden');openPanel.classList.remove('show');panel.innerHTML='<button class="x" aria-label="Close panel">\u2715</button><h2>The solar system</h2><p>Click any planet on the map, or in the row above, to fly to it. By default distances are compressed (square-root scale) so the whole map fits. Hit \u201cTrue distance\u201d to space the orbits at their real ratio \u2014 the inner planets vanish into the sun\u2019s glare until you zoom in, which is exactly how empty the solar system really is.</p>'+statGrid([['Age','4.6 billion yr'],['Planets','8 + 3 dwarfs'],['Known moons','400+'],['Belt asteroids','1.3 million+'],['Edge of map','67.8 AU \u00b7 Eris'],['Light, sun\u2192Eris','9.4 hours']]);wireClose();markChips();}
+function wireClose(){panel.querySelector('.x').onclick=()=>{panel.classList.add('hidden');openPanel.classList.add('show');};}
+openPanel.onclick=()=>{sel?showFacts(sel):showOverview();};
+const chipEls=[];
+function markChips(){chipEls.forEach(c=>c.el.classList.toggle('active',c.p===sel));}
+function select(p){sel=p;showFacts(p);if(mode==='map'){follow=true;interacted=true;let zc=(p===HALLEY&&!unified)?40:Math.min(110/Math.max(p.vr,1e-9),unified?45000:260);if(p.moons){const mo=Math.max.apply(null,p.moons.map(m=>m.a));zc=Math.min(zc,(Math.min(W,H)/2-50)/mo);}tgt.z=zc;}}
+function reset(){sel=null;follow=false;interacted=false;tgt.x=0;tgt.y=0;tgt.z=fitZ();showOverview();}
+const chips=document.getElementById('chips');[SUN].concat(PL,[HALLEY]).forEach(p=>{const b=document.createElement('button');b.className='chip';b.textContent=p.n;b.onclick=()=>select(p);chips.appendChild(b);chipEls.push({p:p,el:b});});
+const ptrs=new Map();let moved=0,pinchD=0;
+function setZoom(nz,mx,my){nz=Math.min(MAXZ(),Math.max(2e-11,nz));interacted=true;if(!follow){const ct=ctSafe(),wx=(mx-W/2)/tgt.z+tgt.x,wy=(my-H/2)/(tgt.z*ct)+tgt.y;tgt.x=wx-(mx-W/2)/nz;tgt.y=wy-(my-H/2)/(nz*ct);}tgt.z=nz;}
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.offsetX,y:e.offsetY});if(ptrs.size===1)moved=0;pinchD=0;cv.style.cursor='grabbing';});
+cv.addEventListener('pointermove',e=>{if(!ptrs.has(e.pointerId))return;const pt=ptrs.get(e.pointerId);
+if(ptrs.size===2){pt.x=e.offsetX;pt.y=e.offsetY;const v=Array.from(ptrs.values()),d=Math.hypot(v[0].x-v[1].x,v[0].y-v[1].y);if(pinchD){const cx=(v[0].x+v[1].x)/2,cy=(v[0].y+v[1].y)/2;if(mode==='map')setZoom(tgt.z*d/pinchD,cx,cy);else setZoomT(tc.z*d/pinchD,cx,cy);}pinchD=d;moved=99;}
+else if(ptrs.size===1){const dx=e.offsetX-pt.x,dy=e.offsetY-pt.y;moved+=Math.abs(dx)+Math.abs(dy);if(moved>4){if(mode==='map'){follow=false;interacted=true;cam.x-=dx/cam.z;cam.y-=dy/(cam.z*ctSafe());tgt.x=cam.x;tgt.y=cam.y;}else{tc.x-=dx/tc.z;tc.y-=dy/tc.z;}}pt.x=e.offsetX;pt.y=e.offsetY;}});
+cv.addEventListener('pointerup',e=>{if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);pinchD=0;cv.style.cursor='grab';if(moved<5)click(e.offsetX,e.offsetY);moved=99;});
+cv.addEventListener('pointercancel',e=>ptrs.delete(e.pointerId));
+cv.addEventListener('wheel',e=>{e.preventDefault();const f=Math.exp(-e.deltaY*.0013);if(mode==='map')setZoom(tgt.z*f,e.offsetX,e.offsetY);else setZoomT(tc.z*f,e.offsetX,e.offsetY);},{passive:false});
+document.getElementById('zin').onclick=()=>{mode==='map'?setZoom(tgt.z*1.6,W/2,H/2):setZoomT(tc.z*1.6,W/2,H/2);};
+document.getElementById('zout').onclick=()=>{mode==='map'?setZoom(tgt.z/1.6,W/2,H/2):setZoomT(tc.z/1.6,W/2,H/2);};
+function click(mx,my){if(mode==='true'){for(const h of trueHits)if(Math.hypot(mx-h.x,my-h.y)<h.r+8){sel=h.p;showFacts(h.p);return;}return;}
+let best=null,bd=1e9;for(const p of ALLB){const wp=bodyPos(p,t),s=w2s(wp.x,wp.y,wp.z),d=Math.hypot(mx-s.x,my-s.y);if(d<Math.max(p.vr*cam.z,13)&&d<bd){bd=d;best=p;}}
+if(best){select(best);return;}
+const ss=w2s(0,0);if(Math.hypot(mx-ss.x,my-ss.y)<Math.max(SUN.vr*cam.z,14))select(SUN);}
+const playBtn=document.getElementById('playBtn');
+function updPlay(){playBtn.textContent=playing?'\u23f8':'\u25b6';playBtn.setAttribute('aria-label',playing?'Pause animation':'Play animation');}
+playBtn.onclick=()=>{playing=!playing;updPlay();};updPlay();
+const speedEl=document.getElementById('speed'),speedOut=document.getElementById('speedOut');
+function updSpeed(){spd=(1/365)*Math.pow(1825,speedEl.value/100);speedOut.textContent=spd<1?Math.round(spd*365)+' days/sec':spd.toFixed(1)+' yr/sec';}
+speedEl.addEventListener('input',updSpeed);updSpeed();
+const mapTab=document.getElementById('mapTab'),lineupTab=document.getElementById('lineupTab');
+function setMode(m){mode=m;if(mode==='true')fitTrue();mapTab.classList.toggle('on',mode==='map');lineupTab.classList.toggle('on',mode==='true');updHud();}
+mapTab.onclick=()=>setMode('map');
+lineupTab.onclick=()=>setMode('true');
+const tiltEl=document.getElementById('tilt'),tiltOut=document.getElementById('tiltOut');
+function tiltWord(){return tiltDeg===0?'top':(tiltDeg<90?'above':(tiltDeg===90?'edge-on':(tiltDeg===180?'bottom':'below')));}
+tiltEl.addEventListener('input',()=>{tiltDeg=+tiltEl.value;cosT=Math.cos(rad(tiltDeg));sinT=Math.sin(rad(tiltDeg));tiltOut.textContent=tiltDeg+'\u00b0 '+tiltWord();updHud();});
+const sizeEl=document.getElementById('size'),sizeOut=document.getElementById('sizeOut');
+sizeEl.addEventListener('input',()=>{sizeS=1-sizeEl.value/100;applyScale();sizeOut.textContent=sizeS===1?'true ratio':(sizeS===0?'exaggerated':Math.round(sizeS*100)+'% true');});
+const uniBtn=document.getElementById('uniBtn');
+uniBtn.onclick=()=>{unified=!unified;if(unified&&distMode==='compressed')setDist('true');applyScale();uniBtn.classList.toggle('on',unified);sizeEl.disabled=unified;sizeOut.textContent=unified?'unified':(sizeS===1?'true ratio':(sizeS===0?'exaggerated':Math.round(sizeS*100)+'% true'));if(!unified&&tgt.z>320)tgt.z=320;if(!(follow&&sel)){interacted=false;tgt.x=0;tgt.y=0;tgt.z=fitZ();}updHud();};
+const compTab=document.getElementById('compTab'),trueDistTab=document.getElementById('trueDistTab');
+function setDist(m){if(distMode===m)return;distMode=m;applyScale();compTab.classList.toggle('on',m==='compressed');trueDistTab.classList.toggle('on',m==='true');if(!(follow&&sel)){interacted=false;tgt.x=0;tgt.y=0;tgt.z=fitZ();}updHud();}
+compTab.onclick=()=>setDist('compressed');
+trueDistTab.onclick=()=>setDist('true');
+document.getElementById('resetBtn').onclick=()=>{if(mode==='true')fitTrue();else reset();};
+showOverview();requestAnimationFrame(frame);
+</script>
+</body>
+</html>
