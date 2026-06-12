@@ -11,7 +11,7 @@
 :root{--bg:#05070F;--panel:rgba(11,15,26,.86);--line:#1C2335;--txt:#E9EDF6;--mut:#8B94AB;--amber:#F2C272;--blue:#6FA0E8}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
-body{background:var(--bg);color:var(--txt);font-family:'Space Grotesk',system-ui,sans-serif;display:flex;flex-direction:column;overflow:hidden}
+body{background:var(--bg);color:var(--txt);font-family:'Space Grotesk',system-ui,sans-serif;display:flex;flex-direction:column;overflow:hidden;max-width:100vw;overflow-x:hidden}
 header{padding:10px 16px 9px;border-bottom:1px solid var(--line)}
 .bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .brand{font-weight:600;letter-spacing:.14em;font-size:13px;text-transform:uppercase;white-space:nowrap}
@@ -21,14 +21,25 @@ header{padding:10px 16px 9px;border-bottom:1px solid var(--line)}
 .seg button{border-radius:0}
 .seg button:first-child{border-radius:8px 0 0 8px}
 .seg button:last-child{border-radius:0 8px 8px 0;border-left:none}
-.sub{display:flex;align-items:flex-end;gap:14px}
+.sub{display:flex;align-items:flex-end;gap:6px 14px;flex-wrap:wrap}
 .uniWrap{flex:1;display:flex;align-items:center;justify-content:center;gap:10px;align-self:center;margin-top:10px;flex-wrap:wrap}
 #uniBtn{padding:8px 14px}
 .uniHint{font-size:11px;font-style:italic;color:var(--mut);white-space:nowrap}
 #resetBtn{margin-left:auto}
 @media(max-width:760px){.uniHint{display:none}}
+@media(max-width:640px){
+.bar{gap:8px}
+.seg.push{margin-left:0}
+.brand small{display:none}
+.seg button,#resetBtn{font-size:11px;padding:5px 9px}
+button.icon{width:40px;padding:7px 0}
+.sliders{grid-template-columns:max-content minmax(80px,1fr) max-content;max-width:none;flex:1 1 100%;gap:6px 8px}
+.sliders span{min-width:64px;font-size:10.5px}
+.uniWrap{margin-top:4px}
+#uniBtn{padding:6px 11px;font-size:11px}
+}
 button.icon{width:46px;padding:8px 0;text-align:center;font-size:15px;line-height:1}
-.sliders{display:grid;grid-template-columns:max-content minmax(220px,1fr) max-content;gap:7px 12px;align-items:center;flex:1.4;max-width:720px;margin-top:10px}
+.sliders{display:grid;grid-template-columns:max-content minmax(220px,1fr) max-content;gap:7px 12px;align-items:center;flex:1.4;max-width:720px;margin-top:10px;min-width:0}
 .sliders label{font-size:12px;color:var(--mut)}
 .sliders span{font-size:11px;color:var(--mut);min-width:78px;text-align:right}
 .sliders input{width:100%}
