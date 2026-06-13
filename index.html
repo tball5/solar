@@ -69,20 +69,21 @@ canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor
 @media(max-width:640px){
 .bar{gap:8px;align-items:center}
 .brand{order:1;flex:0 0 auto}
-#playBtn{order:2}
-.uniWrap{order:3;margin-left:auto;flex-wrap:nowrap;gap:6px}
+.bar .seg.push{order:2;margin-left:auto;margin-top:0}
+.bar .seg{order:3;margin-top:0}
+.bar{column-gap:6px}
 .brk{display:block;order:4;flex-basis:100%;height:0}
-.bar .seg.push{order:5;margin-left:0;margin-top:2px}
-.bar .seg{order:6;margin-top:2px}
+#playBtn{order:5;margin-top:2px}
+.uniWrap{order:6;margin-left:0;flex-wrap:nowrap;gap:6px;margin-top:2px}
+#resetBtn{order:7;margin-left:auto;margin-top:2px}
 .brand small{display:none}
 .seg button{font-size:11px;padding:5px 9px}
-button.icon{width:40px;padding:7px 0;font-size:14px}
-.sliders{grid-template-columns:max-content minmax(70px,1fr) max-content;max-width:none;flex:1 1 100%;gap:6px 8px}
-.sliders input{max-width:160px}
-.sliders span{min-width:62px;font-size:10.5px}
+button.icon{width:42px;padding:7px 0;font-size:14px}
+.sliders{grid-template-columns:max-content minmax(120px,1fr) max-content;max-width:none;flex:1 1 100%;gap:7px 9px}
+.sliders input{max-width:none}
+.sliders span{min-width:64px;font-size:10.5px}
 #uniBtn{padding:6px 10px;font-size:11px}
-#resetBtn{display:none}
-#resetM{display:block;font-size:13px;padding:6px 0;width:46px;background:var(--panel);backdrop-filter:blur(8px)}
+#resetM{display:none}
 }
 </style>
 </head>
