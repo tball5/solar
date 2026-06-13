@@ -22,22 +22,12 @@ header{padding:10px 16px 9px;border-bottom:1px solid var(--line)}
 .seg button:first-child{border-radius:8px 0 0 8px}
 .seg button:last-child{border-radius:0 8px 8px 0;border-left:none}
 .sub{display:flex;align-items:flex-end;gap:6px 14px;flex-wrap:wrap}
-.uniWrap{flex:1;display:flex;align-items:center;justify-content:center;gap:10px;align-self:center;margin-top:10px;flex-wrap:wrap}
+.uniWrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 #uniBtn{padding:8px 14px}
 .uniHint{font-size:11px;font-style:italic;color:var(--mut);white-space:nowrap}
 #resetBtn{margin-left:auto}
+#resetM{display:none}
 @media(max-width:760px){.uniHint{display:none}}
-@media(max-width:640px){
-.bar{gap:8px}
-.seg.push{margin-left:0}
-.brand small{display:none}
-.seg button,#resetBtn{font-size:11px;padding:5px 9px}
-button.icon{width:40px;padding:7px 0}
-.sliders{grid-template-columns:max-content minmax(80px,1fr) max-content;max-width:none;flex:1 1 100%;gap:6px 8px}
-.sliders span{min-width:64px;font-size:10.5px}
-.uniWrap{margin-top:4px}
-#uniBtn{padding:6px 11px;font-size:11px}
-}
 button.icon{width:46px;padding:8px 0;text-align:center;font-size:15px;line-height:1}
 .sliders{display:grid;grid-template-columns:max-content minmax(220px,1fr) max-content;gap:7px 12px;align-items:center;flex:1.4;max-width:720px;margin-top:10px;min-width:0}
 .sliders label{font-size:12px;color:var(--mut)}
@@ -76,6 +66,24 @@ canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor
 #openPanel{position:absolute;right:14px;bottom:14px;background:var(--panel);backdrop-filter:blur(8px);display:none}
 #openPanel.show{display:block}
 @media(max-width:560px){.hint{display:none}.hud{font-size:10.5px}#panel{max-height:48%}}
+@media(max-width:640px){
+.bar{gap:8px;align-items:center}
+.brand{order:1;flex:0 0 auto}
+#playBtn{order:2}
+.uniWrap{order:3;margin-left:auto;flex-wrap:nowrap;gap:6px}
+.brk{display:block;order:4;flex-basis:100%;height:0}
+.bar .seg.push{order:5;margin-left:0;margin-top:2px}
+.bar .seg{order:6;margin-top:2px}
+.brand small{display:none}
+.seg button{font-size:11px;padding:5px 9px}
+button.icon{width:40px;padding:7px 0;font-size:14px}
+.sliders{grid-template-columns:max-content minmax(70px,1fr) max-content;max-width:none;flex:1 1 100%;gap:6px 8px}
+.sliders input{max-width:160px}
+.sliders span{min-width:62px;font-size:10.5px}
+#uniBtn{padding:6px 10px;font-size:11px}
+#resetBtn{display:none}
+#resetM{display:block;font-size:13px;padding:6px 0;width:46px;background:var(--panel);backdrop-filter:blur(8px)}
+}
 </style>
 </head>
 <body>
@@ -83,6 +91,11 @@ canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor
   <div class="bar">
     <div class="brand">Solar system<small>Interactive Map</small></div>
     <button class="icon" id="playBtn" aria-label="Pause animation">⏸</button>
+    <div class="uniWrap">
+      <button id="uniBtn">Unified scale</button>
+      <span class="uniHint">&#8592; sizes &amp; distances on one true scale</span>
+    </div>
+    <div class="brk" aria-hidden="true"></div>
     <div class="seg push" role="tablist" aria-label="View">
       <button id="mapTab" class="on">Orbit map</button>
       <button id="lineupTab">True size view</button>
@@ -104,10 +117,6 @@ canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor
       <input type="range" id="size" min="0" max="100" value="0" step="1">
       <span id="sizeOut" class="mono">true ratio</span>
     </div>
-    <div class="uniWrap">
-      <button id="uniBtn">Unified scale</button>
-      <span class="uniHint">&#8592; sizes &amp; distances on one true scale</span>
-    </div>
     <button id="resetBtn">Reset</button>
   </div>
 </header>
@@ -119,6 +128,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor
   <div class="zoomctl">
     <button id="zin" aria-label="Zoom in">+</button>
     <button id="zout" aria-label="Zoom out">−</button>
+    <button id="resetM">Reset</button>
   </div>
   <aside id="panel" aria-live="polite"></aside>
   <button id="openPanel">ⓘ facts</button>
@@ -353,6 +363,7 @@ function setDist(m){if(distMode===m)return;distMode=m;applyScale();compTab.class
 compTab.onclick=()=>setDist('compressed');
 trueDistTab.onclick=()=>setDist('true');
 document.getElementById('resetBtn').onclick=()=>{if(mode==='true')fitTrue();else reset();};
+document.getElementById('resetM').onclick=()=>{if(mode==='true')fitTrue();else reset();};
 showOverview();requestAnimationFrame(frame);
 </script>
 </body>
